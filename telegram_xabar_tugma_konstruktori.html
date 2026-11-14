@@ -1,0 +1,1360 @@
+<!DOCTYPE html>
+<html lang="uz" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Telegram Xabar & Tugma Konstruktori</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        tg: {
+                            blue: '#3390ec',
+                            blueDark: '#2b7cd3',
+                            darkBg: '#0e1621',
+                            darkCard: '#17212b',
+                            darkInput: '#242f3d',
+                            darkBubble: '#182533',
+                            lightBg: '#f1f5f9',
+                            lightBubble: '#ffffff',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Maxsus scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.35); border-radius: 9999px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(148, 163, 184, 0.6); }
+
+        /* Telegram fon naqshlari */
+        .tg-wallpaper-dark {
+            background-color: #0e1621;
+            background-image: 
+                radial-gradient(circle at 20% 25%, rgba(51, 144, 236, 0.08) 0%, transparent 45%),
+                radial-gradient(circle at 80% 75%, rgba(16, 185, 129, 0.06) 0%, transparent 45%),
+                radial-gradient(#1e2c3a 1px, transparent 1px);
+            background-size: 100% 100%, 100% 100%, 22px 22px;
+        }
+        .tg-wallpaper-light {
+            background-color: #c8d9e6;
+            background-image: 
+                radial-gradient(circle at 25% 20%, rgba(255, 255, 255, 0.45) 0%, transparent 50%),
+                radial-gradient(#a7bfd3 1px, transparent 1px);
+            background-size: 100% 100%, 22px 22px;
+        }
+        .tg-wallpaper-gradient {
+            background: linear-gradient(135deg, #1e3a5f 0%, #2a527a 45%, #1b4d4a 100%);
+        }
+
+        /* Telegram HTML Spoiler effekti */
+        .tg-spoiler {
+            background-color: rgba(148, 163, 184, 0.45);
+            color: transparent;
+            border-radius: 4px;
+            padding: 0 3px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+        .tg-spoiler.revealed, .tg-spoiler:hover {
+            background-color: rgba(148, 163, 184, 0.18);
+            color: inherit;
+        }
+
+        /* Telegram Inline Tugma uslubi */
+        .tg-inline-btn {
+            backdrop-filter: blur(8px);
+            transition: transform 0.1s ease, background-color 0.15s ease;
+        }
+        .tg-inline-btn:active {
+            transform: scale(0.97);
+        }
+
+        @keyframes popIn {
+            from { opacity: 0; transform: scale(0.96) translateY(6px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .animate-pop {
+            animation: popIn 0.2s ease-out forwards;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 dark:bg-[#0b1120] text-slate-800 dark:text-slate-100 font-sans antialiased min-h-screen flex flex-col">
+
+    <!-- Bildirishnomalar (Toast) konteyneri -->
+    <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none max-w-sm w-full px-4 sm:px-0"></div>
+
+    <!-- =====================================================================
+         1. YUQORI NAVIGATSIYA PANELI (TOP NAVBAR & TOKEN BOSHQARUVI)
+         ===================================================================== -->
+    <header class="sticky top-0 z-30 bg-white/90 dark:bg-tg-darkCard/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 shadow-xs">
+        <div class="max-w-[1440px] mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
+            
+            <!-- Chap taraf: Ilova sarlavhasi -->
+            <div class="flex items-center gap-3 min-w-0">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-tg-blue to-cyan-400 flex items-center justify-center text-white shadow-md shadow-sky-500/20 flex-shrink-0">
+                    <i class="fa-solid fa-paper-plane text-lg"></i>
+                </div>
+                <div class="min-w-0">
+                    <h1 class="font-bold text-base sm:text-lg tracking-tight truncate">
+                        Telegram Xabar & Tugma Konstruktori
+                    </h1>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 hidden sm:block truncate">
+                        HTML formatlash, Inline tugmalar yaratish va jonli yuborish paneli
+                    </p>
+                </div>
+            </div>
+
+            <!-- O'ng burchak: Mavzu tugmasi va Token boshqaruvi -->
+            <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                <!-- Kunduzgi / Tungi rejim -->
+                <button id="btn-theme-toggle" title="Mavzuni almashtirish" class="w-9 h-9 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-tg-darkInput hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 transition">
+                    <i id="theme-icon" class="fa-solid fa-sun text-amber-400"></i>
+                </button>
+
+                <!-- Token ulanmagan holatdagi tugma -->
+                <button id="btn-open-token-modal" class="px-3.5 py-2 rounded-xl bg-tg-blue hover:bg-tg-blueDark text-white text-xs sm:text-sm font-medium shadow-sm shadow-sky-500/20 flex items-center gap-2 transition">
+                    <span>🔑 Token sozlamalari</span>
+                </button>
+
+                <!-- Token ulangan holatdagi badge + O'zgartirish tugmasi -->
+                <div id="connected-bot-badge" class="hidden items-center gap-2 bg-slate-100 dark:bg-tg-darkInput border border-slate-200 dark:border-slate-700 pl-3 pr-1.5 py-1 rounded-xl">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse flex-shrink-0" title="Bot ulangan"></span>
+                    <div class="text-left min-w-0 max-w-[120px] sm:max-w-[160px]">
+                        <p id="header-bot-username" class="text-xs font-semibold text-slate-800 dark:text-white truncate">@bot_username</p>
+                    </div>
+                    <button id="btn-edit-token" class="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-xs font-medium text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-600 transition">
+                        O'zgartirish
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- =====================================================================
+         2. ASOSIY ISH MAYDONI (SPLIT-SCREEN: CHAPDA KONSTRUKTOR, O'NGDA PREVIEW)
+         ===================================================================== -->
+    <main class="flex-1 max-w-[1440px] w-full mx-auto px-4 sm:px-6 py-5 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+        <!-- CHAP PANEL: XABAR VA INLINE TUGMALAR MUHARRIRI (7 ustun) -->
+        <div class="lg:col-span-7 flex flex-col gap-5">
+
+            <!-- A. Qabul qiluvchi (Chat ID) va Media Sozlamalari -->
+            <section class="bg-white dark:bg-tg-darkCard rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-xs">
+                <div class="flex items-center justify-between mb-3.5">
+                    <h2 class="font-semibold text-sm flex items-center gap-2 text-slate-800 dark:text-slate-100">
+                        <i class="fa-solid fa-sliders text-tg-blue"></i> Yuborish va Media Sozlamalari
+                    </h2>
+                    <button id="btn-fetch-chats" type="button" class="text-xs px-2.5 py-1.5 rounded-lg bg-sky-500/10 hover:bg-sky-500/20 text-tg-blue font-medium transition flex items-center gap-1.5" title="Botga oxirgi yozgan chatlarni olish">
+                        <i class="fa-solid fa-arrows-rotate text-[11px]"></i>
+                        <span>Oxirgi Chat ID larni olish</span>
+                    </button>
+                </div>
+
+                <!-- Oxirgi topilgan chatlar ro'yxati (getUpdates dan keyin chiqadi) -->
+                <div id="recent-chats-box" class="hidden mb-3.5 p-3 rounded-xl bg-slate-50 dark:bg-tg-darkInput/70 border border-slate-200/80 dark:border-slate-700">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Tanlash uchun chat ustiga bosing:</span>
+                        <button id="btn-close-recent-chats" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                    <div id="recent-chats-list" class="flex flex-wrap gap-1.5"></div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <!-- Chat ID -->
+                    <div>
+                        <label for="input-chat-id" class="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1.5">
+                            Qabul qiluvchi Chat ID yoki @kanal *
+                        </label>
+                        <div class="relative">
+                            <i class="fa-solid fa-hashtag absolute left-3.5 top-3 text-slate-400 text-xs"></i>
+                            <input type="text" id="input-chat-id" placeholder="Masalan: 123456789 yoki @kanalim" class="w-full pl-8 pr-3 py-2 rounded-xl bg-slate-50 dark:bg-tg-darkInput border border-slate-200 dark:border-slate-700 focus:border-tg-blue focus:ring-2 focus:ring-tg-blue/20 focus:outline-none text-sm font-mono transition">
+                        </div>
+                    </div>
+
+                    <!-- Rasm URL (ixtiyoriy) -->
+                    <div>
+                        <label for="input-photo-url" class="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1.5">
+                            Rasm havolasi — Photo URL (ixtiyoriy)
+                        </label>
+                        <div class="relative">
+                            <i class="fa-regular fa-image absolute left-3.5 top-3 text-slate-400 text-xs"></i>
+                            <input type="url" id="input-photo-url" placeholder="https://example.com/rasm.jpg" class="w-full pl-9 pr-8 py-2 rounded-xl bg-slate-50 dark:bg-tg-darkInput border border-slate-200 dark:border-slate-700 focus:border-tg-blue focus:ring-2 focus:ring-tg-blue/20 focus:outline-none text-sm transition">
+                            <button id="btn-clear-photo" type="button" title="Rasmni olib tashlash" class="hidden absolute right-2.5 top-2.5 text-slate-400 hover:text-rose-500">
+                                <i class="fa-solid fa-xmark text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Qo'shimcha parametrlar -->
+                <div class="mt-3.5 pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
+                    <label class="inline-flex items-center gap-2 cursor-pointer select-none">
+                        <input type="checkbox" id="chk-disable-preview" class="w-4 h-4 rounded text-tg-blue focus:ring-tg-blue/30 bg-slate-100 dark:bg-tg-darkInput border-slate-300 dark:border-slate-600">
+                        <span class="text-xs text-slate-600 dark:text-slate-300">Havola ko'rinishini o'chirish (<code class="text-[11px] bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded">disable_web_page_preview</code>)</span>
+                    </label>
+                    <span id="char-counter" class="text-[11px] font-mono text-slate-400">0 / 4096 belgi</span>
+                </div>
+            </section>
+
+            <!-- B. Xabar Matni va HTML Formatlash Muharriri -->
+            <section class="bg-white dark:bg-tg-darkCard rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-xs">
+                <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                    <h2 class="font-semibold text-sm flex items-center gap-2">
+                        <i class="fa-solid fa-align-left text-tg-blue"></i> Xabar Matni (HTML)
+                    </h2>
+
+                    <!-- Formatlash tugmalari paneli -->
+                    <div class="flex flex-wrap items-center gap-1 bg-slate-100 dark:bg-tg-darkInput p-1 rounded-xl border border-slate-200/70 dark:border-slate-700/70">
+                        <button type="button" onclick="applyFormat('b')" title="Qalin (Bold) <b>" class="w-7 h-7 rounded-lg hover:bg-white dark:hover:bg-slate-700 flex items-center justify-center text-xs font-bold transition">B</button>
+                        <button type="button" onclick="applyFormat('i')" title="Kursiv (Italic) <i>" class="w-7 h-7 rounded-lg hover:bg-white dark:hover:bg-slate-700 flex items-center justify-center text-xs italic font-serif transition">I</button>
+                        <button type="button" onclick="applyFormat('u')" title="Tagiga chizilgan (Underline) <u>" class="w-7 h-7 rounded-lg hover:bg-white dark:hover:bg-slate-700 flex items-center justify-center text-xs underline transition">U</button>
+                        <button type="button" onclick="applyFormat('s')" title="O'chirilgan (Strikethrough) <s>" class="w-7 h-7 rounded-lg hover:bg-white dark:hover:bg-slate-700 flex items-center justify-center text-xs line-through transition">S</button>
+                        <button type="button" onclick="applyFormat('code')" title="Kod (Monospace) <code>" class="w-7 h-7 rounded-lg hover:bg-white dark:hover:bg-slate-700 flex items-center justify-center text-xs font-mono transition"><i class="fa-solid fa-code text-[11px]"></i></button>
+                        <button type="button" onclick="applyFormat('tg-spoiler')" title="Yashirin matn (Spoiler) <tg-spoiler>" class="w-7 h-7 rounded-lg hover:bg-white dark:hover:bg-slate-700 flex items-center justify-center text-xs transition"><i class="fa-solid fa-eye-slash text-[11px]"></i></button>
+                        <button type="button" id="btn-insert-link" title="Havola qo'shish <a href='...'>" class="px-2 h-7 rounded-lg hover:bg-white dark:hover:bg-slate-700 flex items-center justify-center text-xs gap-1 transition"><i class="fa-solid fa-link text-[11px]"></i></button>
+                    </div>
+                </div>
+
+                <textarea id="input-message-text" rows="5" placeholder="Xabaringiz matnini shu yerga yozing... HTML teglardan (<b>, <i>, <u>, <code>, <tg-spoiler>) foydalanishingiz mumkin." class="w-full p-3.5 rounded-xl bg-slate-50 dark:bg-tg-darkInput border border-slate-200 dark:border-slate-700 focus:border-tg-blue focus:ring-2 focus:ring-tg-blue/20 focus:outline-none text-sm leading-relaxed resize-y transition"></textarea>
+            </section>
+
+            <!-- C. Visual Inline Keyboard (Tugmalar) Konstruktori -->
+            <section class="bg-white dark:bg-tg-darkCard rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-xs">
+                <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+                    <div>
+                        <h2 class="font-semibold text-sm flex items-center gap-2">
+                            <i class="fa-solid fa-grip text-tg-blue"></i> Inline Tugmalar Konstruktori
+                        </h2>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Har bir qatorga 1 tadan 4 tagacha yonma-yon tugma qo'shishingiz mumkin</p>
+                    </div>
+
+                    <!-- Tayyor shablonlar (Presets) -->
+                    <div class="flex flex-wrap items-center gap-1.5">
+                        <span class="text-[11px] text-slate-400 mr-1">Shablonlar:</span>
+                        <button type="button" onclick="loadPreset('channel')" class="px-2.5 py-1 rounded-lg text-xs bg-slate-100 dark:bg-tg-darkInput hover:bg-sky-500/15 hover:text-tg-blue border border-slate-200/70 dark:border-slate-700 transition">📢 Kanal</button>
+                        <button type="button" onclick="loadPreset('poll')" class="px-2.5 py-1 rounded-lg text-xs bg-slate-100 dark:bg-tg-darkInput hover:bg-sky-500/15 hover:text-tg-blue border border-slate-200/70 dark:border-slate-700 transition">✅ Ha / Yo'q</button>
+                        <button type="button" onclick="loadPreset('menu')" class="px-2.5 py-1 rounded-lg text-xs bg-slate-100 dark:bg-tg-darkInput hover:bg-sky-500/15 hover:text-tg-blue border border-slate-200/70 dark:border-slate-700 transition">📱 Menyu</button>
+                    </div>
+                </div>
+
+                <!-- Qatorlar ro'yxati konteyneri -->
+                <div id="keyboard-rows-container" class="space-y-3.5">
+                    <!-- JS orqali qatorlar va tugmalar chiziladi -->
+                </div>
+
+                <!-- Yangi qator qo'shish tugmasi -->
+                <div class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                    <button type="button" id="btn-add-row" class="px-4 py-2 rounded-xl bg-sky-500/10 hover:bg-sky-500/20 text-tg-blue font-medium text-xs sm:text-sm flex items-center gap-2 transition">
+                        <i class="fa-solid fa-plus"></i>
+                        <span>Yangi qator qo'shish</span>
+                    </button>
+
+                    <button type="button" id="btn-clear-buttons" class="text-xs text-slate-400 hover:text-rose-500 transition px-2 py-1">
+                        Barcha tugmalarni tozalash
+                    </button>
+                </div>
+            </section>
+        </div>
+
+        <!-- =====================================================================
+             O'NG PANEL: JONLI TELEGRAM PREVIEW VA KOD EKSPORTI (5 ustun)
+             ===================================================================== -->
+        <div class="lg:col-span-5 lg:sticky lg:top-20 flex flex-col gap-4">
+
+            <div class="bg-white dark:bg-tg-darkCard rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col">
+                
+                <!-- Yuqori Tablar: Preview vs JSON/Kod -->
+                <div class="px-4 py-3 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2 bg-slate-50/70 dark:bg-slate-900/40">
+                    <div class="flex items-center gap-1 bg-slate-200/70 dark:bg-tg-darkInput p-1 rounded-xl">
+                        <button id="tab-preview" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-2xs transition flex items-center gap-1.5">
+                            <i class="fa-brands fa-telegram text-tg-blue"></i> Jonli Ko'rinish
+                        </button>
+                        <button id="tab-code" class="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-code"></i> JSON / Kod
+                        </button>
+                    </div>
+
+                    <!-- Fon rangini o'zgartirish (Preview uchun) -->
+                    <div id="wallpaper-controls" class="flex items-center gap-1.5" title="Chat orqa fonini o'zgartirish">
+                        <button onclick="setWallpaper('dark')" class="w-5 h-5 rounded-full bg-[#0e1621] border border-slate-500 hover:scale-110 transition" title="Tungi fon"></button>
+                        <button onclick="setWallpaper('light')" class="w-5 h-5 rounded-full bg-[#c8d9e6] border border-slate-400 hover:scale-110 transition" title="Kunduzgi fon"></button>
+                        <button onclick="setWallpaper('gradient')" class="w-5 h-5 rounded-full bg-gradient-to-tr from-sky-800 to-teal-600 border border-slate-400 hover:scale-110 transition" title="Gradient fon"></button>
+                    </div>
+                </div>
+
+                <!-- 1-KO'RINISH: JONLI TELEGRAM CHAT PREVIEW -->
+                <div id="view-preview" class="flex flex-col">
+                    <!-- Mobil Telegram Header imitatsiyasi -->
+                    <div class="px-4 py-2.5 bg-white dark:bg-tg-darkCard border-b border-slate-200/80 dark:border-slate-800 flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-tg-blue to-indigo-500 text-white font-bold text-xs flex items-center justify-center flex-shrink-0">
+                            <i class="fa-solid fa-robot"></i>
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <h3 id="preview-bot-name" class="text-xs sm:text-sm font-semibold truncate">Sizning Botingiz</h3>
+                            <p class="text-[11px] text-tg-blue">bot</p>
+                        </div>
+                        <span class="text-[11px] text-slate-400 font-mono">HTML Mode</span>
+                    </div>
+
+                    <!-- Chat Xabar Maydoni -->
+                    <div id="preview-canvas" class="tg-wallpaper-dark p-4 sm:p-6 min-h-[340px] max-h-[480px] overflow-y-auto flex flex-col justify-end transition-all duration-300">
+                        
+                        <div class="max-w-[92%] sm:max-w-[86%] self-start animate-pop">
+                            <!-- Xabar pufakchasi (Bubble) -->
+                            <div class="bg-white dark:bg-tg-darkBubble text-slate-900 dark:text-slate-100 rounded-2xl rounded-bl-xs shadow-md overflow-hidden border border-black/5 dark:border-white/5">
+                                
+                                <!-- Ixtiyoriy Rasm Preview -->
+                                <div id="preview-image-wrapper" class="hidden relative bg-slate-200 dark:bg-slate-800">
+                                    <img id="preview-image" src="" alt="Media preview" class="w-full max-h-56 object-cover block" onerror="handlePreviewImageError()">
+                                    <div id="preview-image-error" class="hidden p-4 text-center text-xs text-rose-400 bg-slate-900/90">
+                                        <i class="fa-solid fa-triangle-exclamation mr-1"></i> Rasm havolasi yuklanmadi (URL ni tekshiring)
+                                    </div>
+                                </div>
+
+                                <!-- Xabar matni va vaqt -->
+                                <div class="px-3.5 py-2.5">
+                                    <div id="preview-message-body" class="text-sm whitespace-pre-wrap break-words leading-relaxed">
+                                        Salom! Bu <b>Telegram</b> xabar konstruktori.
+                                    </div>
+                                    <div class="flex items-center justify-end gap-1 mt-1 text-[10px] text-slate-400">
+                                        <span id="preview-time">12:00</span>
+                                        <i class="fa-solid fa-check-double text-sky-400"></i>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Inline Tugmalar Panjarasi (Bubble ostida) -->
+                            <div id="preview-keyboard-grid" class="mt-1.5 flex flex-col gap-1.5">
+                                <!-- JS orqali tugmalar chiziladi -->
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- 2-KO'RINISH: KOD VA JSON EKSPORT -->
+                <div id="view-code" class="hidden flex flex-col p-4 bg-slate-950 text-slate-200 min-h-[395px] max-h-[530px]">
+                    <!-- Kod formati tanlash -->
+                    <div class="flex items-center justify-between gap-2 mb-3">
+                        <div class="flex items-center gap-1.5">
+                            <button onclick="setCodeLang('json')" id="code-btn-json" class="px-2.5 py-1 rounded-lg text-xs font-mono bg-tg-blue text-white">JSON</button>
+                            <button onclick="setCodeLang('python')" id="code-btn-python" class="px-2.5 py-1 rounded-lg text-xs font-mono bg-slate-800 text-slate-300 hover:bg-slate-700">Python (aiogram)</button>
+                            <button onclick="setCodeLang('nodejs')" id="code-btn-nodejs" class="px-2.5 py-1 rounded-lg text-xs font-mono bg-slate-800 text-slate-300 hover:bg-slate-700">Node.js</button>
+                        </div>
+
+                        <button id="btn-copy-code" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium flex items-center gap-1.5 transition">
+                            <i class="fa-regular fa-copy"></i> Nusxalash
+                        </button>
+                    </div>
+
+                    <pre id="code-output" class="flex-1 overflow-auto p-3.5 rounded-xl bg-[#0d131f] border border-slate-800 text-xs font-mono text-sky-300 leading-relaxed select-all"></pre>
+                </div>
+
+                <!-- Pastki Asosiy Harakat Paneli (Telegramga Yuborish) -->
+                <div class="p-4 bg-white dark:bg-tg-darkCard border-t border-slate-200 dark:border-slate-800">
+                    <button id="btn-send-telegram" type="button" class="w-full py-3 px-5 rounded-xl bg-gradient-to-r from-tg-blue to-blue-600 hover:from-tg-blueDark hover:to-blue-700 active:scale-[0.99] text-white font-semibold text-sm shadow-lg shadow-sky-500/25 flex items-center justify-center gap-2 transition disabled:opacity-50 disabled:cursor-not-allowed">
+                        <span>🚀 Telegramga yuborish</span>
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- =====================================================================
+         MODAL 1: TELEGRAM BOT TOKEN SOZLAMALARI (LOCALSTORAGE)
+         ===================================================================== -->
+    <div id="modal-token" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-tg-darkCard rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-700 animate-pop">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-xl bg-sky-500/15 text-tg-blue flex items-center justify-center">
+                        <i class="fa-solid fa-key"></i>
+                    </div>
+                    <h3 class="text-base font-bold">Telegram Bot Token Sozlamalari</h3>
+                </div>
+                <button id="btn-close-token-modal" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-lg">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-4">
+                <a href="https://t.me/BotFather" target="_blank" class="text-tg-blue hover:underline font-medium">@BotFather</a> dan olingan Bot Tokenini kiriting. Token tekshirilgandan so'ng brauzeringizning <b>localStorage</b> xotirasida saqlanadi.
+            </p>
+
+            <div class="space-y-4">
+                <div>
+                    <label for="modal-token-input" class="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                        Bot Token *
+                    </label>
+                    <div class="relative flex items-center">
+                        <input type="password" id="modal-token-input" placeholder="1234567890:AAF2jdFIS3HxR57SkoDSFJ8..." class="w-full pl-3.5 pr-10 py-2.5 rounded-xl bg-slate-50 dark:bg-tg-darkInput border border-slate-300 dark:border-slate-600 focus:border-tg-blue focus:ring-2 focus:ring-tg-blue/20 focus:outline-none text-xs font-mono">
+                        <button type="button" id="btn-toggle-token-visibility" class="absolute right-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                            <i id="modal-eye-icon" class="fa-regular fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tekshirish natijasi (Bot ma'lumotlari) -->
+                <div id="token-verify-result" class="hidden p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-700 dark:text-emerald-300 flex items-center gap-2.5">
+                    <i class="fa-solid fa-circle-check text-emerald-500 text-base"></i>
+                    <div>
+                        <p class="font-semibold" id="verify-bot-name">Bot Nomi</p>
+                        <p class="font-mono opacity-85" id="verify-bot-username">@username</p>
+                    </div>
+                </div>
+
+                <!-- Tugmalar -->
+                <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                    <button type="button" id="btn-delete-token" class="px-3 py-2 rounded-xl text-xs font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 transition flex items-center gap-1.5">
+                        <i class="fa-regular fa-trash-can"></i> Tokenni o'chirish
+                    </button>
+
+                    <div class="flex items-center gap-2 ml-auto">
+                        <button type="button" id="btn-verify-save-token" class="px-4 py-2 rounded-xl bg-tg-blue hover:bg-tg-blueDark text-white text-xs sm:text-sm font-medium shadow-sm flex items-center gap-2 transition">
+                            <i class="fa-solid fa-check"></i>
+                            <span>Tekshirish va Saqlash</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- =====================================================================
+         MODAL 2: HAVOLA QO'SHISH (<a href="...">)
+         ===================================================================== -->
+    <div id="modal-link" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-tg-darkCard rounded-2xl max-w-sm w-full p-5 shadow-2xl border border-slate-200 dark:border-slate-700 animate-pop">
+            <h3 class="text-sm font-bold mb-3">Matnga havola (Link) qo'shish</h3>
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Ko'rinadigan matn</label>
+                    <input type="text" id="link-text-input" placeholder="Batafsil o'qish" class="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-tg-darkInput border border-slate-200 dark:border-slate-700 text-sm focus:outline-none focus:border-tg-blue">
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">URL manzil</label>
+                    <input type="url" id="link-url-input" placeholder="https://t.me/telegram" class="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-tg-darkInput border border-slate-200 dark:border-slate-700 text-sm focus:outline-none focus:border-tg-blue">
+                </div>
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" id="btn-cancel-link" class="px-3.5 py-1.5 rounded-xl text-xs font-medium text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800">Bekor qilish</button>
+                    <button type="button" id="btn-confirm-link" class="px-3.5 py-1.5 rounded-xl text-xs font-medium bg-tg-blue text-white hover:bg-tg-blueDark">Qo'shish</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- =====================================================================
+         JAVASCRIPT LOGIKASI
+         ===================================================================== -->
+    <script>
+        // LocalStorage kalitlari
+        const LS_KEYS = {
+            TOKEN: 'tg_builder_bot_token',
+            BOT_INFO: 'tg_builder_bot_info',
+            CHAT_ID: 'tg_builder_last_chat_id',
+            THEME: 'tg_builder_theme'
+        };
+
+        // Ilova holati (State)
+        const state = {
+            token: localStorage.getItem(LS_KEYS.TOKEN) || '',
+            botInfo: JSON.parse(localStorage.getItem(LS_KEYS.BOT_INFO) || 'null'),
+            chatId: localStorage.getItem(LS_KEYS.CHAT_ID) || '',
+            photoUrl: '',
+            disableWebPagePreview: false,
+            messageText: "Assalomu alaykum! 👋\n\nBu <b>Telegram Xabar & Tugma Konstruktori</b> orqali yaratilgan namunaviy xabar.\n\n<i>Quyidagi tugmalar yordamida foydalanuvchilarni kerakli bo'limlarga yo'naltirishingiz mumkin:</i>",
+            // Inline tugmalar qatorlari (2D massiv)
+            rows: [
+                [
+                    { id: 'btn_1', text: '📢 Rasmiy kanalimiz', type: 'url', value: 'https://t.me/telegram' }
+                ],
+                [
+                    { id: 'btn_2', text: '✅ Tasdiqlash', type: 'callback_data', value: 'confirm_action' },
+                    { id: 'btn_3', text: '❌ Bekor qilish', type: 'callback_data', value: 'cancel_action' }
+                ]
+            ],
+            activeTab: 'preview', // 'preview' | 'code'
+            codeLang: 'json',     // 'json' | 'python' | 'nodejs'
+            wallpaper: 'dark'
+        };
+
+        // DOM elementlari
+        const el = {
+            btnOpenTokenModal: document.getElementById('btn-open-token-modal'),
+            connectedBotBadge: document.getElementById('connected-bot-badge'),
+            headerBotUsername: document.getElementById('header-bot-username'),
+            btnEditToken: document.getElementById('btn-edit-token'),
+            modalToken: document.getElementById('modal-token'),
+            modalTokenInput: document.getElementById('modal-token-input'),
+            btnToggleTokenVis: document.getElementById('btn-toggle-token-visibility'),
+            modalEyeIcon: document.getElementById('modal-eye-icon'),
+            tokenVerifyResult: document.getElementById('token-verify-result'),
+            verifyBotName: document.getElementById('verify-bot-name'),
+            verifyBotUsername: document.getElementById('verify-bot-username'),
+            btnVerifySaveToken: document.getElementById('btn-verify-save-token'),
+            btnDeleteToken: document.getElementById('btn-delete-token'),
+            btnCloseTokenModal: document.getElementById('btn-close-token-modal'),
+
+            inputChatId: document.getElementById('input-chat-id'),
+            inputPhotoUrl: document.getElementById('input-photo-url'),
+            btnClearPhoto: document.getElementById('btn-clear-photo'),
+            chkDisablePreview: document.getElementById('chk-disable-preview'),
+            inputMessageText: document.getElementById('input-message-text'),
+            charCounter: document.getElementById('char-counter'),
+            keyboardRowsContainer: document.getElementById('keyboard-rows-container'),
+            btnAddRow: document.getElementById('btn-add-row'),
+            btnClearButtons: document.getElementById('btn-clear-buttons'),
+
+            btnFetchChats: document.getElementById('btn-fetch-chats'),
+            recentChatsBox: document.getElementById('recent-chats-box'),
+            recentChatsList: document.getElementById('recent-chats-list'),
+
+            tabPreview: document.getElementById('tab-preview'),
+            tabCode: document.getElementById('tab-code'),
+            viewPreview: document.getElementById('view-preview'),
+            viewCode: document.getElementById('view-code'),
+            wallpaperControls: document.getElementById('wallpaper-controls'),
+            previewCanvas: document.getElementById('preview-canvas'),
+            previewBotName: document.getElementById('preview-bot-name'),
+            previewImageWrapper: document.getElementById('preview-image-wrapper'),
+            previewImage: document.getElementById('preview-image'),
+            previewImageError: document.getElementById('preview-image-error'),
+            previewMessageBody: document.getElementById('preview-message-body'),
+            previewTime: document.getElementById('preview-time'),
+            previewKeyboardGrid: document.getElementById('preview-keyboard-grid'),
+            codeOutput: document.getElementById('code-output'),
+            btnCopyCode: document.getElementById('btn-copy-code'),
+            btnSendTelegram: document.getElementById('btn-send-telegram')
+        };
+
+        // =====================================================================
+        // 1. YORDAMCHI FUNKSIYALAR
+        // =====================================================================
+
+        function escapeHTML(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const styles = {
+                info: 'bg-slate-800 text-white border-slate-700',
+                success: 'bg-emerald-600 text-white border-emerald-500',
+                error: 'bg-rose-600 text-white border-rose-500',
+                warning: 'bg-amber-600 text-white border-amber-500'
+            };
+            const icons = {
+                info: 'fa-circle-info',
+                success: 'fa-circle-check',
+                error: 'fa-circle-exclamation',
+                warning: 'fa-triangle-exclamation'
+            };
+            toast.className = `pointer-events-auto flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-xl border text-xs sm:text-sm font-medium transition-all duration-300 ${styles[type] || styles.info}`;
+            toast.innerHTML = `<i class="fa-solid ${icons[type] || icons.info} flex-shrink-0"></i><span>${escapeHTML(message)}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(10px)';
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+
+        function generateId() {
+            return 'btn_' + Math.random().toString(36).substring(2, 9);
+        }
+
+        // =====================================================================
+        // 2. TOKEN BOSHQARUVI (LOCALSTORAGE + GETME)
+        // =====================================================================
+
+        function updateHeaderTokenUI() {
+            if (state.token && state.botInfo) {
+                el.btnOpenTokenModal.classList.add('hidden');
+                el.connectedBotBadge.classList.remove('hidden');
+                el.connectedBotBadge.classList.add('flex');
+                el.headerBotUsername.textContent = `@${state.botInfo.username}`;
+                el.previewBotName.textContent = state.botInfo.first_name || 'Sizning Botingiz';
+            } else if (state.token) {
+                el.btnOpenTokenModal.classList.add('hidden');
+                el.connectedBotBadge.classList.remove('hidden');
+                el.connectedBotBadge.classList.add('flex');
+                el.headerBotUsername.textContent = 'Bot ulangan';
+            } else {
+                el.btnOpenTokenModal.classList.remove('hidden');
+                el.connectedBotBadge.classList.add('hidden');
+                el.connectedBotBadge.classList.remove('flex');
+                el.previewBotName.textContent = 'Sizning Botingiz';
+            }
+        }
+
+        function openTokenModal() {
+            el.modalTokenInput.value = state.token || '';
+            if (state.botInfo && state.token) {
+                el.verifyBotName.textContent = state.botInfo.first_name;
+                el.verifyBotUsername.textContent = `@${state.botInfo.username}`;
+                el.tokenVerifyResult.classList.remove('hidden');
+            } else {
+                el.tokenVerifyResult.classList.add('hidden');
+            }
+            el.modalToken.classList.remove('hidden');
+            el.modalTokenInput.focus();
+        }
+
+        async function verifyAndSaveToken() {
+            const rawToken = el.modalTokenInput.value.trim();
+            if (!rawToken) {
+                showToast("Iltimos, bot tokenini kiriting!", "warning");
+                return;
+            }
+
+            const originalBtnHtml = el.btnVerifySaveToken.innerHTML;
+            el.btnVerifySaveToken.disabled = true;
+            el.btnVerifySaveToken.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i><span>Tekshirilmoqda...</span>`;
+
+            try {
+                const res = await fetch(`https://api.telegram.org/bot${rawToken}/getMe`);
+                const data = await res.json();
+
+                if (!data.ok) {
+                    throw new Error(data.description || "Noto'g'ri bot tokeni");
+                }
+
+                // LocalStorage ga saqlash
+                state.token = rawToken;
+                state.botInfo = data.result;
+                localStorage.setItem(LS_KEYS.TOKEN, rawToken);
+                localStorage.setItem(LS_KEYS.BOT_INFO, JSON.stringify(data.result));
+
+                el.verifyBotName.textContent = data.result.first_name;
+                el.verifyBotUsername.textContent = `@${data.result.username}`;
+                el.tokenVerifyResult.classList.remove('hidden');
+
+                updateHeaderTokenUI();
+                showToast(`@${data.result.username} muvaffaqiyatli ulandi va saqlandi!`, "success");
+
+                setTimeout(() => {
+                    el.modalToken.classList.add('hidden');
+                }, 600);
+
+            } catch (error) {
+                showToast("Token xatosi: " + error.message, "error");
+            } finally {
+                el.btnVerifySaveToken.disabled = false;
+                el.btnVerifySaveToken.innerHTML = originalBtnHtml;
+            }
+        }
+
+        function deleteSavedToken() {
+            localStorage.removeItem(LS_KEYS.TOKEN);
+            localStorage.removeItem(LS_KEYS.BOT_INFO);
+            state.token = '';
+            state.botInfo = null;
+            el.modalTokenInput.value = '';
+            el.tokenVerifyResult.classList.add('hidden');
+            updateHeaderTokenUI();
+            showToast("Bot tokeni xotiradan o'chirildi", "info");
+        }
+
+        // Oxirgi yozgan foydalanuvchilar Chat ID sini olish
+        async function fetchRecentChats() {
+            if (!state.token) {
+                showToast("Avval yuqori o'ng burchakdan Bot Tokenini kiriting!", "warning");
+                openTokenModal();
+                return;
+            }
+
+            el.btnFetchChats.disabled = true;
+            el.btnFetchChats.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i><span>Yuklanmoqda...</span>`;
+
+            try {
+                const res = await fetch(`https://api.telegram.org/bot${state.token}/getUpdates?limit=20`);
+                const data = await res.json();
+
+                if (!data.ok) throw new Error(data.description || "Xatolik yuz berdi");
+
+                const uniqueChats = new Map();
+                (data.result || []).forEach(upd => {
+                    const msg = upd.message || upd.channel_post || upd.callback_query?.message;
+                    if (msg && msg.chat) {
+                        const title = msg.chat.title || [msg.chat.first_name, msg.chat.last_name].filter(Boolean).join(' ') || 'Noma\'lum';
+                        uniqueChats.set(String(msg.chat.id), {
+                            id: String(msg.chat.id),
+                            title: title,
+                            username: msg.chat.username ? `@${msg.chat.username}` : ''
+                        });
+                    }
+                });
+
+                if (uniqueChats.size === 0) {
+                    showToast("Yaqin orada botga hech kim yozmagan. Botingizga /start yuboring va qayta urining.", "info");
+                } else {
+                    el.recentChatsList.innerHTML = Array.from(uniqueChats.values()).map(c => `
+                        <button type="button" onclick="selectRecentChat('${escapeHTML(c.id)}')" class="px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-800 hover:bg-tg-blue hover:text-white border border-slate-200 dark:border-slate-700 text-xs transition flex items-center gap-1.5 shadow-2xs">
+                            <span class="font-medium">${escapeHTML(c.title)}</span>
+                            <span class="font-mono opacity-75 text-[11px]">(${escapeHTML(c.id)})</span>
+                        </button>
+                    `).join('');
+                    el.recentChatsBox.classList.remove('hidden');
+                }
+            } catch (err) {
+                showToast("Chatlarni olishda xatolik: " + err.message, "error");
+            } finally {
+                el.btnFetchChats.disabled = false;
+                el.btnFetchChats.innerHTML = `<i class="fa-solid fa-arrows-rotate text-[11px]"></i><span>Oxirgi Chat ID larni olish</span>`;
+            }
+        }
+
+        function selectRecentChat(id) {
+            state.chatId = id;
+            el.inputChatId.value = id;
+            localStorage.setItem(LS_KEYS.CHAT_ID, id);
+            el.recentChatsBox.classList.add('hidden');
+            showToast(`Chat ID tanlandi: ${id}`, "success");
+        }
+
+        // =====================================================================
+        // 3. HTML MATN FORMATLASH VA JONLI PREVIEW
+        // =====================================================================
+
+        function applyFormat(tag) {
+            const textarea = el.inputMessageText;
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const selected = textarea.value.substring(start, end) || 'matn';
+            const replacement = `<${tag}>${selected}</${tag}>`;
+
+            textarea.setRangeText(replacement, start, end, 'select');
+            textarea.focus();
+            state.messageText = textarea.value;
+            renderAll();
+        }
+
+        // Xavfsiz Telegram HTML ko'rinishini tayyorlash
+        function renderSafeTelegramHTML(rawText) {
+            if (!rawText.trim()) {
+                return `<span class="opacity-45 italic">Xabar matni bo'sh...</span>`;
+            }
+
+            // Avval barcha belgilarni ekranlaymiz, so'ngra ruxsat etilgan Telegram HTML teglarini tiklaymiz
+            let safe = escapeHTML(rawText);
+
+            const allowedPairs = ['b', 'strong', 'i', 'em', 'u', 'ins', 's', 'strike', 'del', 'code', 'pre'];
+            allowedPairs.forEach(tag => {
+                const openRegex = new RegExp(`&lt;${tag}&gt;`, 'gi');
+                const closeRegex = new RegExp(`&lt;\\/${tag}&gt;`, 'gi');
+                if (tag === 'code' || tag === 'pre') {
+                    safe = safe.replace(openRegex, `<code class="px-1.5 py-0.5 rounded bg-slate-200/80 dark:bg-slate-800 font-mono text-xs text-sky-600 dark:text-sky-300">`);
+                    safe = safe.replace(closeRegex, `</code>`);
+                } else {
+                    safe = safe.replace(openRegex, `<${tag}>`);
+                    safe = safe.replace(closeRegex, `</${tag}>`);
+                }
+            });
+
+            // <tg-spoiler> tegini qo'llab-quvvatlash
+            safe = safe.replace(/&lt;tg-spoiler&gt;/gi, `<span class="tg-spoiler" onclick="this.classList.toggle('revealed')" title="Ko'rish uchun bosing">`);
+            safe = safe.replace(/&lt;\/tg-spoiler&gt;/gi, `</span>`);
+
+            // <a href="..."> havolalarini tiklash
+            safe = safe.replace(/&lt;a\s+href=(?:&quot;|&#039;)(https?:\/\/[^\s"'<>]+)(?:&quot;|&#039;)&gt;(.*?)&lt;\/a&gt;/gi, 
+                `<a href="$1" target="_blank" rel="noopener noreferrer" class="text-tg-blue underline hover:opacity-80">$2</a>`);
+
+            return safe;
+        }
+
+        function handlePreviewImageError() {
+            el.previewImage.classList.add('hidden');
+            el.previewImageError.classList.remove('hidden');
+        }
+
+        // =====================================================================
+        // 4. VISUAL INLINE KEYBOARD BUILDER (QATORLAR VA TUGMALAR)
+        // =====================================================================
+
+        function renderKeyboardEditor() {
+            if (state.rows.length === 0) {
+                el.keyboardRowsContainer.innerHTML = `
+                    <div class="text-center py-6 px-4 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 text-xs text-slate-400">
+                        Hozircha inline tugmalar yo'q. Pastdagi <b>"+ Yangi qator qo'shish"</b> tugmasini bosing.
+                    </div>
+                `;
+                return;
+            }
+
+            el.keyboardRowsContainer.innerHTML = state.rows.map((row, rIdx) => {
+                const canAddBtn = row.length < 4;
+
+                const buttonsHtml = row.map((btn, bIdx) => {
+                    const placeholderMap = {
+                        'url': 'https://t.me/kanal_nomi',
+                        'callback_data': 'btn_click_1',
+                        'web_app': 'https://webapp.example.com',
+                        'switch_inline_query': 'qidiruv_matni'
+                    };
+
+                    return `
+                        <div class="p-3 rounded-xl bg-white dark:bg-tg-darkCard border border-slate-200 dark:border-slate-700/90 shadow-2xs flex flex-col gap-2 relative">
+                            <!-- Tugma sarlavhasi va tartiblash tugmalari -->
+                            <div class="flex items-center justify-between gap-1 border-b border-slate-100 dark:border-slate-800 pb-1.5">
+                                <span class="text-[11px] font-semibold text-slate-400">Tugma #${bIdx + 1}</span>
+                                <div class="flex items-center gap-0.5">
+                                    ${bIdx > 0 ? `<button type="button" onclick="moveButton(${rIdx}, ${bIdx}, -1)" title="Chapga surish" class="w-6 h-6 rounded hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 text-[10px]"><i class="fa-solid fa-arrow-left"></i></button>` : ''}
+                                    ${bIdx < row.length - 1 ? `<button type="button" onclick="moveButton(${rIdx}, ${bIdx}, 1)" title="O'ngga surish" class="w-6 h-6 rounded hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 text-[10px]"><i class="fa-solid fa-arrow-right"></i></button>` : ''}
+                                    <button type="button" onclick="removeButton(${rIdx}, ${bIdx})" title="Tugmani o'chirish" class="w-6 h-6 rounded hover:bg-rose-500/15 text-slate-400 hover:text-rose-500 text-[11px]"><i class="fa-solid fa-xmark"></i></button>
+                                </div>
+                            </div>
+
+                            <!-- Tugma matni -->
+                            <div>
+                                <input type="text" value="${escapeHTML(btn.text)}" oninput="updateButtonField(${rIdx}, ${bIdx}, 'text', this.value)" placeholder="Tugma matni (masalan: 🚀 Boshlash)" class="w-full px-2.5 py-1.5 rounded-lg bg-slate-50 dark:bg-tg-darkInput border border-slate-200 dark:border-slate-700 text-xs font-medium focus:outline-none focus:border-tg-blue">
+                            </div>
+
+                            <!-- Tugma turi -->
+                            <div>
+                                <select onchange="updateButtonField(${rIdx}, ${bIdx}, 'type', this.value)" class="w-full px-2 py-1.5 rounded-lg bg-slate-50 dark:bg-tg-darkInput border border-slate-200 dark:border-slate-700 text-xs focus:outline-none focus:border-tg-blue">
+                                    <option value="url" ${btn.type === 'url' ? 'selected' : ''}>🔗 URL Havola (url)</option>
+                                    <option value="callback_data" ${btn.type === 'callback_data' ? 'selected' : ''}>⚡ Callback Data (callback_data)</option>
+                                    <option value="web_app" ${btn.type === 'web_app' ? 'selected' : ''}>🌐 Web App (web_app)</option>
+                                    <option value="switch_inline_query" ${btn.type === 'switch_inline_query' ? 'selected' : ''}>🔍 Inline ulashish</option>
+                                </select>
+                            </div>
+
+                            <!-- Qiymat (URL yoki Callback) -->
+                            <div>
+                                <input type="text" value="${escapeHTML(btn.value)}" oninput="updateButtonField(${rIdx}, ${bIdx}, 'value', this.value)" placeholder="${placeholderMap[btn.type] || 'Qiymat'}" class="w-full px-2.5 py-1.5 rounded-lg bg-slate-50 dark:bg-tg-darkInput border border-slate-200 dark:border-slate-700 text-xs font-mono focus:outline-none focus:border-tg-blue">
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                return `
+                    <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-tg-darkInput/60 border border-slate-200/90 dark:border-slate-700/80">
+                        <!-- Qator boshqaruvi -->
+                        <div class="flex items-center justify-between gap-2 mb-3">
+                            <div class="flex items-center gap-2">
+                                <span class="px-2 py-0.5 rounded-md bg-tg-blue/15 text-tg-blue text-xs font-bold">${rIdx + 1}-qator</span>
+                                <span class="text-[11px] text-slate-400">(${row.length}/4 tugma)</span>
+                            </div>
+
+                            <div class="flex items-center gap-1">
+                                ${canAddBtn ? `
+                                    <button type="button" onclick="addButtonToRow(${rIdx})" class="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-700 hover:bg-tg-blue hover:text-white border border-slate-200 dark:border-slate-600 text-xs font-medium transition flex items-center gap-1">
+                                        <i class="fa-solid fa-plus text-[10px]"></i> Tugma
+                                    </button>
+                                ` : ''}
+                                ${rIdx > 0 ? `<button type="button" onclick="moveRow(${rIdx}, -1)" title="Qatorni yuqoriga ko'tarish" class="w-7 h-7 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 text-xs"><i class="fa-solid fa-arrow-up"></i></button>` : ''}
+                                ${rIdx < state.rows.length - 1 ? `<button type="button" onclick="moveRow(${rIdx}, 1)" title="Qatorni pastga tushirish" class="w-7 h-7 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 text-xs"><i class="fa-solid fa-arrow-down"></i></button>` : ''}
+                                <button type="button" onclick="removeRow(${rIdx})" title="Butun qatorni o'chirish" class="w-7 h-7 rounded-lg hover:bg-rose-500/15 text-slate-400 hover:text-rose-500 text-xs"><i class="fa-regular fa-trash-can"></i></button>
+                            </div>
+                        </div>
+
+                        <!-- Qatordagi tugmalar panjarasi -->
+                        <div class="grid grid-cols-1 sm:grid-cols-${Math.min(row.length, 2)} xl:grid-cols-${row.length} gap-2.5">
+                            ${buttonsHtml}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Qator va tugma operatsiyalari
+        function addRow() {
+            state.rows.push([
+                { id: generateId(), text: 'Yangi tugma', type: 'callback_data', value: `action_${state.rows.length + 1}` }
+            ]);
+            renderAll();
+        }
+
+        function removeRow(rIdx) {
+            state.rows.splice(rIdx, 1);
+            renderAll();
+        }
+
+        function moveRow(rIdx, dir) {
+            const targetIdx = rIdx + dir;
+            if (targetIdx < 0 || targetIdx >= state.rows.length) return;
+            const temp = state.rows[rIdx];
+            state.rows[rIdx] = state.rows[targetIdx];
+            state.rows[targetIdx] = temp;
+            renderAll();
+        }
+
+        function addButtonToRow(rIdx) {
+            if (state.rows[rIdx].length >= 4) return;
+            state.rows[rIdx].push({
+                id: generateId(),
+                text: 'Tugma',
+                type: 'callback_data',
+                value: `btn_${Date.now().toString().slice(-4)}`
+            });
+            renderAll();
+        }
+
+        function removeButton(rIdx, bIdx) {
+            state.rows[rIdx].splice(bIdx, 1);
+            if (state.rows[rIdx].length === 0) {
+                state.rows.splice(rIdx, 1);
+            }
+            renderAll();
+        }
+
+        function moveButton(rIdx, bIdx, dir) {
+            const row = state.rows[rIdx];
+            const targetIdx = bIdx + dir;
+            if (targetIdx < 0 || targetIdx >= row.length) return;
+            const temp = row[bIdx];
+            row[bIdx] = row[targetIdx];
+            row[targetIdx] = temp;
+            renderAll();
+        }
+
+        function updateButtonField(rIdx, bIdx, field, value) {
+            state.rows[rIdx][bIdx][field] = value;
+            if (field === 'type') {
+                renderKeyboardEditor();
+            }
+            renderPreviewAndCode();
+        }
+
+        // Tayyor shablonlar
+        function loadPreset(presetName) {
+            if (presetName === 'channel') {
+                state.messageText = "🔥 <b>Yangi foydali post!</b>\n\nBizning rasmiy kanalimizga obuna bo'ling va eng so'nggi yangiliklardan birinchi bo'lib xabardor bo'ling.";
+                state.rows = [
+                    [{ id: generateId(), text: "📢 Kanalga obuna bo'lish", type: 'url', value: 'https://t.me/telegram' }],
+                    [{ id: generateId(), text: "✅ Obuna bo'ldim", type: 'callback_data', value: 'check_sub' }]
+                ];
+            } else if (presetName === 'poll') {
+                state.messageText = "📊 <b>Tezkor so'rovnoma</b>\n\nYangi funksiyalar sizga ma'qul keldimi? O'z fikringizni bildiring:";
+                state.rows = [
+                    [
+                        { id: generateId(), text: "👍 Ha, ajoyib!", type: 'callback_data', value: 'vote_yes' },
+                        { id: generateId(), text: "👎 Yo'q, yaxshilash kerak", type: 'callback_data', value: 'vote_no' }
+                    ]
+                ];
+            } else if (presetName === 'menu') {
+                state.messageText = "🏠 <b>Asosiy Boshqaruv Menyusi</b>\n\nKerakli bo'limni tanlang:";
+                state.rows = [
+                    [
+                        { id: generateId(), text: "🛍 Katalog", type: 'callback_data', value: 'menu_catalog' },
+                        { id: generateId(), text: "🛒 Savatcha", type: 'callback_data', value: 'menu_cart' }
+                    ],
+                    [
+                        { id: generateId(), text: "📞 Aloqa", type: 'url', value: 'https://t.me/telegram' },
+                        { id: generateId(), text: "⚙️ Sozlamalar", type: 'callback_data', value: 'menu_settings' }
+                    ]
+                ];
+            }
+            el.inputMessageText.value = state.messageText;
+            renderAll();
+            showToast("Shablon yuklandi", "info");
+        }
+
+        // =====================================================================
+        // 5. JONLI TELEGRAM PREVIEW VA KOD GENERATSIYASI
+        // =====================================================================
+
+        function buildTelegramReplyMarkup() {
+            const inline_keyboard = state.rows
+                .map(row => row
+                    .filter(btn => btn.text.trim() !== '')
+                    .map(btn => {
+                        const obj = { text: btn.text.trim() };
+                        const val = btn.value.trim();
+                        if (btn.type === 'url') {
+                            obj.url = val || 'https://t.me/telegram';
+                        } else if (btn.type === 'web_app') {
+                            obj.web_app = { url: val || 'https://example.com' };
+                        } else if (btn.type === 'switch_inline_query') {
+                            obj.switch_inline_query = val;
+                        } else {
+                            obj.callback_data = val || 'callback_btn';
+                        }
+                        return obj;
+                    })
+                )
+                .filter(row => row.length > 0);
+
+            return { inline_keyboard };
+        }
+
+        function renderPreviewAndCode() {
+            // Vaqtni yangilash
+            const now = new Date();
+            el.previewTime.textContent = now.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' });
+
+            // Belgi hisoblagich
+            const maxLen = state.photoUrl.trim() ? 1024 : 4096;
+            el.charCounter.textContent = `${state.messageText.length} / ${maxLen} belgi`;
+
+            // Rasm preview
+            const photo = state.photoUrl.trim();
+            if (photo) {
+                el.previewImageWrapper.classList.remove('hidden');
+                el.previewImage.classList.remove('hidden');
+                el.previewImageError.classList.add('hidden');
+                if (el.previewImage.src !== photo) {
+                    el.previewImage.src = photo;
+                }
+            } else {
+                el.previewImageWrapper.classList.add('hidden');
+            }
+
+            // HTML matnni chizish
+            el.previewMessageBody.innerHTML = renderSafeTelegramHTML(state.messageText);
+
+            // Inline tugmalarni preview da chizish
+            const markup = buildTelegramReplyMarkup();
+            if (markup.inline_keyboard.length === 0) {
+                el.previewKeyboardGrid.innerHTML = '';
+            } else {
+                el.previewKeyboardGrid.innerHTML = markup.inline_keyboard.map(row => {
+                    const btnsHtml = row.map(btn => {
+                        const isExternal = Boolean(btn.url || btn.web_app);
+                        const arrowIcon = isExternal
+                            ? `<span class="absolute top-1 right-1.5 text-[10px] opacity-75">↗</span>`
+                            : '';
+
+                        return `
+                            <button type="button" onclick='handlePreviewButtonClick(${JSON.stringify(btn)})' class="tg-inline-btn relative flex-1 min-w-0 py-2 px-3 rounded-xl bg-slate-900/55 hover:bg-slate-900/70 dark:bg-[#243447]/85 dark:hover:bg-[#2c3f57] text-white text-xs sm:text-[13px] font-medium text-center truncate shadow-xs border border-white/10">
+                                <span class="truncate block">${escapeHTML(btn.text)}</span>
+                                ${arrowIcon}
+                            </button>
+                        `;
+                    }).join('');
+
+                    return `<div class="flex items-center gap-1.5 w-full">${btnsHtml}</div>`;
+                }).join('');
+            }
+
+            // Kod eksportini yangilash
+            renderCodeExport(markup);
+        }
+
+        function handlePreviewButtonClick(btn) {
+            if (btn.url) {
+                showToast(`Havola ochildi: ${btn.url}`, "info");
+                window.open(btn.url, '_blank', 'noopener,noreferrer');
+            } else if (btn.web_app) {
+                showToast(`Web App URL: ${btn.web_app.url}`, "info");
+            } else if (btn.switch_inline_query !== undefined) {
+                showToast(`Inline so'rov: "${btn.switch_inline_query}"`, "info");
+            } else {
+                showToast(`Callback yuborildi: "${btn.callback_data}"`, "success");
+            }
+        }
+
+        function renderCodeExport(markup) {
+            const jsonStr = JSON.stringify(markup, null, 2);
+            const escapedText = state.messageText.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n');
+
+            if (state.codeLang === 'json') {
+                el.codeOutput.textContent = jsonStr;
+            } else if (state.codeLang === 'python') {
+                const pyRows = markup.inline_keyboard.map(row => {
+                    const pyBtns = row.map(b => {
+                        if (b.url) return `InlineKeyboardButton(text="${b.text}", url="${b.url}")`;
+                        if (b.web_app) return `InlineKeyboardButton(text="${b.text}", web_app=WebAppInfo(url="${b.web_app.url}"))`;
+                        if (b.switch_inline_query !== undefined) return `InlineKeyboardButton(text="${b.text}", switch_inline_query="${b.switch_inline_query}")`;
+                        return `InlineKeyboardButton(text="${b.text}", callback_data="${b.callback_data}")`;
+                    }).join(',\n        ');
+                    return `    [\n        ${pyBtns}\n    ]`;
+                }).join(',\n');
+
+                el.codeOutput.textContent = `from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+
+keyboard = InlineKeyboardMarkup(inline_keyboard=[
+${pyRows}
+])
+
+await bot.send_message(
+    chat_id=${state.chatId || 'CHAT_ID'},
+    text="${escapedText}",
+    parse_mode="HTML",
+    reply_markup=keyboard
+)`;
+            } else if (state.codeLang === 'nodejs') {
+                el.codeOutput.textContent = `// Telegraf / node-telegram-bot-api uchun
+await bot.telegram.sendMessage(${state.chatId ? `'${state.chatId}'` : 'CHAT_ID'}, "${escapedText}", {
+  parse_mode: 'HTML',
+  disable_web_page_preview: ${state.disableWebPagePreview},
+  reply_markup: ${jsonStr.replace(/\n/g, '\n  ')}
+});`;
+            }
+        }
+
+        function setCodeLang(lang) {
+            state.codeLang = lang;
+            ['json', 'python', 'nodejs'].forEach(l => {
+                const btn = document.getElementById(`code-btn-${l}`);
+                if (l === lang) {
+                    btn.className = 'px-2.5 py-1 rounded-lg text-xs font-mono bg-tg-blue text-white';
+                } else {
+                    btn.className = 'px-2.5 py-1 rounded-lg text-xs font-mono bg-slate-800 text-slate-300 hover:bg-slate-700';
+                }
+            });
+            renderPreviewAndCode();
+        }
+
+        function setWallpaper(type) {
+            state.wallpaper = type;
+            el.previewCanvas.classList.remove('tg-wallpaper-dark', 'tg-wallpaper-light', 'tg-wallpaper-gradient');
+            el.previewCanvas.classList.add(`tg-wallpaper-${type}`);
+        }
+
+        function renderAll() {
+            renderKeyboardEditor();
+            renderPreviewAndCode();
+        }
+
+        // =====================================================================
+        // 6. TELEGRAM API ORQALI XABAR YUBORISH
+        // =====================================================================
+
+        async function sendToTelegram() {
+            if (!state.token) {
+                showToast("Xabar yuborish uchun avval Bot Tokenini kiriting!", "warning");
+                openTokenModal();
+                return;
+            }
+
+            const chatId = el.inputChatId.value.trim();
+            if (!chatId) {
+                showToast("Qabul qiluvchi Chat ID yoki @kanal nomini kiriting!", "warning");
+                el.inputChatId.focus();
+                return;
+            }
+
+            const text = state.messageText.trim();
+            const photo = state.photoUrl.trim();
+
+            if (!text && !photo) {
+                showToast("Yuborish uchun xabar matni yoki rasm kiriting!", "warning");
+                return;
+            }
+
+            const replyMarkup = buildTelegramReplyMarkup();
+            const originalBtnHtml = el.btnSendTelegram.innerHTML;
+            el.btnSendTelegram.disabled = true;
+            el.btnSendTelegram.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i><span>Yuborilmoqda...</span>`;
+
+            try {
+                let endpoint = 'sendMessage';
+                const payload = {
+                    chat_id: chatId,
+                    parse_mode: 'HTML'
+                };
+
+                if (replyMarkup.inline_keyboard.length > 0) {
+                    payload.reply_markup = replyMarkup;
+                }
+
+                if (photo) {
+                    endpoint = 'sendPhoto';
+                    payload.photo = photo;
+                    if (text) payload.caption = text;
+                } else {
+                    payload.text = text;
+                    if (state.disableWebPagePreview) {
+                        payload.disable_web_page_preview = true;
+                    }
+                }
+
+                const response = await fetch(`https://api.telegram.org/bot${state.token}/${endpoint}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+                if (!data.ok) {
+                    throw new Error(data.description || "Telegram API xatoligi");
+                }
+
+                localStorage.setItem(LS_KEYS.CHAT_ID, chatId);
+                showToast("Xabar tugmalar bilan muvaffaqiyatli yuborildi!", "success");
+
+            } catch (err) {
+                showToast("Yuborishda xatolik: " + err.message, "error");
+            } finally {
+                el.btnSendTelegram.disabled = false;
+                el.btnSendTelegram.innerHTML = originalBtnHtml;
+            }
+        }
+
+        // =====================================================================
+        // 7. HODISALARNI BOG'LASH (EVENT LISTENERS)
+        // =====================================================================
+
+        function initEventListeners() {
+            // Mavzu (Dark/Light)
+            const savedTheme = localStorage.getItem(LS_KEYS.THEME) || 'dark';
+            if (savedTheme === 'light') {
+                document.documentElement.classList.remove('dark');
+                document.getElementById('theme-icon').className = 'fa-solid fa-moon text-slate-600';
+            }
+
+            document.getElementById('btn-theme-toggle').addEventListener('click', () => {
+                const isDark = document.documentElement.classList.toggle('dark');
+                localStorage.setItem(LS_KEYS.THEME, isDark ? 'dark' : 'light');
+                document.getElementById('theme-icon').className = isDark
+                    ? 'fa-solid fa-sun text-amber-400'
+                    : 'fa-solid fa-moon text-slate-600';
+            });
+
+            // Token modal boshqaruvi
+            el.btnOpenTokenModal.addEventListener('click', openTokenModal);
+            el.btnEditToken.addEventListener('click', openTokenModal);
+            el.btnCloseTokenModal.addEventListener('click', () => el.modalToken.classList.add('hidden'));
+            el.btnVerifySaveToken.addEventListener('click', verifyAndSaveToken);
+            el.btnDeleteToken.addEventListener('click', deleteSavedToken);
+
+            el.btnToggleTokenVis.addEventListener('click', () => {
+                const isPass = el.modalTokenInput.type === 'password';
+                el.modalTokenInput.type = isPass ? 'text' : 'password';
+                el.modalEyeIcon.className = isPass ? 'fa-regular fa-eye-slash' : 'fa-regular fa-eye';
+            });
+
+            // Chat ID va Media inputlar
+            el.inputChatId.value = state.chatId;
+            el.inputChatId.addEventListener('input', (e) => {
+                state.chatId = e.target.value;
+                renderPreviewAndCode();
+            });
+
+            el.inputPhotoUrl.addEventListener('input', (e) => {
+                state.photoUrl = e.target.value;
+                el.btnClearPhoto.classList.toggle('hidden', !state.photoUrl);
+                renderPreviewAndCode();
+            });
+
+            el.btnClearPhoto.addEventListener('click', () => {
+                state.photoUrl = '';
+                el.inputPhotoUrl.value = '';
+                el.btnClearPhoto.classList.add('hidden');
+                renderPreviewAndCode();
+            });
+
+            el.chkDisablePreview.addEventListener('change', (e) => {
+                state.disableWebPagePreview = e.target.checked;
+                renderPreviewAndCode();
+            });
+
+            // Xabar matni
+            el.inputMessageText.value = state.messageText;
+            el.inputMessageText.addEventListener('input', (e) => {
+                state.messageText = e.target.value;
+                renderPreviewAndCode();
+            });
+
+            // Havola qo'shish modali
+            const modalLink = document.getElementById('modal-link');
+            document.getElementById('btn-insert-link').addEventListener('click', () => {
+                const textarea = el.inputMessageText;
+                const sel = textarea.value.substring(textarea.selectionStart, textarea.selectionEnd);
+                document.getElementById('link-text-input').value = sel || '';
+                document.getElementById('link-url-input').value = 'https://';
+                modalLink.classList.remove('hidden');
+                document.getElementById('link-url-input').focus();
+            });
+
+            document.getElementById('btn-cancel-link').addEventListener('click', () => modalLink.classList.add('hidden'));
+            document.getElementById('btn-confirm-link').addEventListener('click', () => {
+                const linkText = document.getElementById('link-text-input').value.trim() || 'Havola';
+                const linkUrl = document.getElementById('link-url-input').value.trim();
+                if (linkUrl) {
+                    const textarea = el.inputMessageText;
+                    textarea.setRangeText(`<a href="${linkUrl}">${linkText}</a>`, textarea.selectionStart, textarea.selectionEnd, 'end');
+                    state.messageText = textarea.value;
+                    renderAll();
+                }
+                modalLink.classList.add('hidden');
+            });
+
+            // Tugma qatorlari
+            el.btnAddRow.addEventListener('click', addRow);
+            el.btnClearButtons.addEventListener('click', () => {
+                state.rows = [];
+                renderAll();
+                showToast("Barcha tugmalar olib tashlandi", "info");
+            });
+
+            // Oxirgi chatlarni olish
+            el.btnFetchChats.addEventListener('click', fetchRecentChats);
+            document.getElementById('btn-close-recent-chats').addEventListener('click', () => {
+                el.recentChatsBox.classList.add('hidden');
+            });
+
+            // Preview / Kod tablari
+            el.tabPreview.addEventListener('click', () => {
+                state.activeTab = 'preview';
+                el.viewPreview.classList.remove('hidden');
+                el.viewCode.classList.add('hidden');
+                el.wallpaperControls.classList.remove('hidden');
+                el.tabPreview.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-2xs transition flex items-center gap-1.5';
+                el.tabCode.className = 'px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition flex items-center gap-1.5';
+            });
+
+            el.tabCode.addEventListener('click', () => {
+                state.activeTab = 'code';
+                el.viewPreview.classList.add('hidden');
+                el.viewCode.classList.remove('hidden');
+                el.wallpaperControls.classList.add('hidden');
+                el.tabCode.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-2xs transition flex items-center gap-1.5';
+                el.tabPreview.className = 'px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition flex items-center gap-1.5';
+                renderPreviewAndCode();
+            });
+
+            // Kodni nusxalash
+            el.btnCopyCode.addEventListener('click', () => {
+                const temp = document.createElement('textarea');
+                temp.value = el.codeOutput.textContent;
+                document.body.appendChild(temp);
+                temp.select();
+                document.execCommand('copy');
+                document.body.removeChild(temp);
+                showToast("Kod buferga nusxalandi!", "success");
+            });
+
+            // Telegramga yuborish
+            el.btnSendTelegram.addEventListener('click', sendToTelegram);
+        }
+
+        // Ilovani ishga tushirish
+        window.addEventListener('DOMContentLoaded', () => {
+            updateHeaderTokenUI();
+            initEventListeners();
+            renderAll();
+        });
+    </script>
+</body>
+</html>
